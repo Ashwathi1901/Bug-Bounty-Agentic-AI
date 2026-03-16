@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI Vulnerability Intelligence System</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"/>
+</head>
+
+<body class="bg-gray-950 text-white">
+
+<div class="max-w-7xl mx-auto p-8">
+
+<!-- Header -->
+<div class="text-center mb-10">
+<h1 class="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-500">
+AI Vulnerability Intelligence System
+</h1>
+<p class="text-gray-400 mt-2">Agentic AI Powered • Prayatna 3.0 Hackathon</p>
+</div>
+
+<!-- Upload Section -->
+<div class="bg-gray-900 border border-gray-700 rounded-3xl p-10 mb-10">
+<div class="text-center">
+
+<i class="fa-solid fa-cloud-arrow-up text-6xl text-cyan-400 mb-6"></i>
+
+<h2 class="text-3xl font-semibold mb-4">Upload Vulnerability Dataset</h2>
+<p class="text-gray-400 mb-8">CSV / XLSX Dataset Upload</p>
+
+<div class="flex justify-center gap-6">
+
+<!-- FILE UPLOAD -->
+<label class="cursor-pointer bg-gray-800 hover:bg-gray-700 border border-dashed border-cyan-400 rounded-2xl p-10 w-72 text-center transition">
+
+<input type="file" id="fileUpload" accept=".csv,.xlsx" class="hidden"/>
+
+<i class="fa-solid fa-file-arrow-up text-4xl text-cyan-400 mb-3"></i>
+
+<p class="font-medium">Upload Dataset</p>
+<p class="text-xs text-gray-500">.csv / .xlsx file</p>
+
+</label>
+
+<!-- NVD API BUTTON -->
+<button onclick="ingestNVD()"
+class="bg-purple-600 hover:bg-purple-700 px-12 py-10 rounded-2xl flex flex-col items-center transition">
+
+<i class="fa-solid fa-database text-4xl mb-3"></i>
+
+<p class="font-medium">Fetch from NVD API</p>
+<p class="text-xs text-purple-300">Live Data Ingestion Agent</p>
+
+</button>
+
+</div>
+</div>
+</div>
+
+<!-- Analyze Button -->
+<div class="text-center mb-12">
+
+<button onclick="runAgenticAnalysis()"
+id="analyzeBtn"
+class="bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700 text-white text-2xl font-bold px-16 py-6 rounded-3xl shadow-xl flex items-center gap-4 mx-auto transition">
+
+<i class="fa-solid fa-bolt-lightning"></i>
+RUN AI ANALYSIS
+
+</button>
+
+</div>
+
+<!-- Results Section -->
+<div id="results" class="hidden">
+
+<!-- Top Vulnerabilities -->
+<div class="bg-gray-900 rounded-3xl p-8 mb-10">
+
+<h3 class="text-2xl font-semibold mb-6">
+<span class="text-red-500">Top Critical Vulnerabilities</span>
+</h3>
+
+<table class="w-full">
+
+<thead>
+<tr class="border-b border-gray-700">
+<th class="py-4 text-left">CVE ID</th>
+<th class="py-4 text-left">Type</th>
+<th class="py-4 text-left">Risk Score</th>
+</tr>
+</thead>
+
+<tbody id="topVulns"></tbody>
+
+</table>
+
+</div>
+
+<!-- Patch Priority -->
+<div class="bg-gray-900 rounded-3xl p-8">
+
+<h3 class="text-2xl font-semibold mb-6">
+Recommended Patch Priority
+</h3>
+
+<ol id="priorityList" class="space-y-6"></ol>
+
+</div>
+</div>
+</div>
+
+<script>
+
+
+
+// ================= CSV/XLSX FILE UPLOAD =================
+document.getElementById("fileUpload").addEventListener("change", async function(){
+
+const file = this.files[0];
+
+if(!file) return;
+
+const formData = new FormData();
+formData.append("file", file);
+
+try{
+
+const res = await fetch("http://127.0.0.1:8000/process_dataset",{
+
+method:"POST",
+body:formData
+
+});
+
+const data = await res.json();
+
+alert("Dataset uploaded successfully!");
+
+console.log(data);
+
+}catch(error){
+
+console.error(error);
+alert("Upload failed. Backend run karo.");
+
+}
+
+});
+
+
+
+// ================= MONGODB DATA LOAD =================
+async function loadFromMongoDB(){
+
+try{
+
+const res = await fetch("http://127.0.0.1:8000/get_cves");
+
+const data = await res.json();
+
+const tbody = document.getElementById("topVulns");
+
+tbody.innerHTML = "";
+
+data.cves.forEach(cve=>{
+
+const row = `
+<tr class="border-b border-gray-700">
+
+<td class="py-4">${cve.cve_id}</td>
+
+<td class="py-4">${cve.type || 'Unknown'}</td>
+
+<td class="py-4">${cve.risk_score || '0.5'}</td>
+
+</tr>
+`;
+
+tbody.innerHTML += row;
+
+});
+
+}catch(err){
+
+console.error(err);
+
+}
+
+}
+
+
+
+// ================= NVD API INGESTION =================
+async function ingestNVD(){
+
+try{
+
+const res = await fetch("http://127.0.0.1:8000/fetch_cves");
+
+const data = await res.json();
+
+alert(data.message);
+
+loadFromMongoDB();
+
+}catch(error){
+
+console.error(error);
+alert("Backend run nahi ho raha");
+
+}
+
+}
+
+
+
+// ================= AI ANALYSIS =================
+async function runAgenticAnalysis(){
+
+try{
+
+const res = await fetch("http://127.0.0.1:8000/analyze",{
+method:"POST"
+});
+
+const data = await res.json();
+
+alert(data.message);
+
+document.getElementById("results").classList.remove("hidden");
+
+loadFromMongoDB();
+
+}catch(error){
+
+console.error(error);
+
+alert("AI analysis run nahi hua");
+
+}
+
+}
+
+
+
+// PAGE LOAD
+window.onload = loadFromMongoDB;
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Submit Report • AutoBounty AI</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"/>
+  <style>
+    body { font-family: system-ui, sans-serif; }
+    .h1-header { background: linear-gradient(to right, #0A2540, #1E3A8A); }
+  </style>
+</head>
+<body class="bg-gray-50">
+
+  <!-- Navbar -->
+  <nav class="h1-header text-white py-4 sticky top-0 z-50">
+    <div class="max-w-6xl mx-auto px-6 flex items-center justify-between">
+      <div class="flex items-center gap-4">
+        <i class="fa-solid fa-shield-halved text-3xl"></i>
+        <h1 class="text-3xl font-bold">AutoBounty AI</h1>
+      </div>
+      <div class="flex gap-8 text-sm font-medium">
+        <a href="index.html" class="underline font-bold">Submit Report</a>
+        <a href="dashboard.html" class="hover:underline">Dashboard</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="max-w-5xl mx-auto px-6 py-10 grid grid-cols-12 gap-8">
+    <div class="col-span-12 lg:col-span-8">
+      <div class="bg-white rounded-3xl shadow-2xl p-10">
+        <h2 class="text-3xl font-semibold mb-8">Submit a New Vulnerability Report</h2>
+        
+        <form id="reportForm" class="space-y-8">
+          <input id="title" type="text" placeholder="Report Title *" class="w-full px-5 py-4 border rounded-2xl text-lg" required>
+          <input id="url" type="text" placeholder="Affected URL *" class="w-full px-5 py-4 border rounded-2xl text-lg" required>
+          <select id="type" class="w-full px-5 py-4 border rounded-2xl text-lg">
+            <option>SQL Injection</option><option>XSS</option><option>RCE</option><option>IDOR</option><option>Other</option>
+          </select>
+          <textarea id="desc" rows="5" placeholder="Description & PoC *" class="w-full px-5 py-4 border rounded-2xl text-lg" required></textarea>
+          <textarea id="steps" rows="4" placeholder="Steps to Reproduce *" class="w-full px-5 py-4 border rounded-2xl text-lg" required></textarea>
+
+          <button type="submit" class="w-full bg-[#0066FF] hover:bg-blue-700 text-white py-6 text-2xl font-bold rounded-3xl">
+            Submit Report
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('reportForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const report = {
+        id: Date.now(),
+        title: document.getElementById('title').value,
+        severity: "High", // backend se real aayega
+        score: Math.floor(Math.random()*40 + 65), // temporary
+        time: "Just now"
+      };
+
+      // Backend call
+      const formData = new FormData();
+      formData.append('text', report.title + "\n" + document.getElementById('desc').value);
+
+      try {
+        const res = await fetch('http://127.0.0.1:8000/analyze', { method: 'POST', body: formData });
+        const data = await res.json();
+        report.severity = data.severity;
+        report.score = data.exploit_score;
+      } catch(e) { console.log("Backend not running, using dummy"); }
+
+      // Save to localStorage
+      let reports = JSON.parse(localStorage.getItem('autobounty_reports')) || [];
+      reports.unshift(report);
+      localStorage.setItem('autobounty_reports', JSON.stringify(reports));
+
+      alert("✅ Report Submitted! Dashboard mein check karo");
+      window.location.href = "dashboard.html";
+    });
+  </script>
+</body>
+</html>
